@@ -155,6 +155,17 @@ const PublicPortfolio: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin })
         return;
       }
 
+      const isHomeAboutPair =
+        (prevId === 'home' && sectionId === 'about') ||
+        (prevId === 'about' && sectionId === 'home');
+
+      if (isHomeAboutPair) {
+        manualNavUntilRef.current = Date.now() + 950;
+        setActiveSection(sectionId);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
       manualNavUntilRef.current = Date.now() + 1600;
       const { direction, totalMs } = triggerTurnVisual(prevId, sectionId, 'full');
       setActiveSection(sectionId);
@@ -292,8 +303,13 @@ const PublicPortfolio: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin })
           setActiveSection(nextId);
 
           const now = Date.now();
+          const isHomeAboutCrossing =
+            (prevId === 'home' && nextId === 'about') ||
+            (prevId === 'about' && nextId === 'home');
+
           if (
             nextId !== prevId &&
+            !isHomeAboutCrossing &&
             siteRevealed &&
             !introActive &&
             now > manualNavUntilRef.current &&

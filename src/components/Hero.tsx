@@ -43,9 +43,22 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate, revealed = true }) => {
     offset: ['start start', 'end start'],
   });
 
-  const textParallaxY = useTransform(scrollYProgress, [0, 1], [0, 75]);
-  const portraitParallaxY = useTransform(scrollYProgress, [0, 1], [0, -50]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.18]);
+  const smoothScroll = useSpring(scrollYProgress, {
+    stiffness: 115,
+    damping: 26,
+    mass: 0.35,
+  });
+
+  const textParallaxY = useTransform(smoothScroll, [0, 1], [0, 56]);
+  const portraitParallaxY = useTransform(smoothScroll, [0, 1], [0, -34]);
+  const heroScale = useTransform(smoothScroll, [0, 0.14, 0.88, 1], [1, 1, 0.962, 0.95]);
+  const heroOpacity = useTransform(smoothScroll, [0, 0.16, 0.84, 1], [1, 1, 0.22, 0.06]);
+  const heroRecessY = useTransform(smoothScroll, [0, 1], [0, 36]);
+  const heroBlur = useTransform(
+    smoothScroll,
+    [0, 0.28, 0.88, 1],
+    ['blur(0px)', 'blur(0px)', 'blur(3.5px)', 'blur(5px)']
+  );
 
   const activeReveal = shouldReduceMotion || revealed;
 
@@ -84,8 +97,18 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate, revealed = true }) => {
       />
 
       <motion.div
-        style={shouldReduceMotion ? undefined : { opacity: heroOpacity }}
-        className="relative mx-auto w-full max-w-[1360px] px-6 sm:px-10 flex-1 flex items-center z-10"
+        style={
+          shouldReduceMotion
+            ? undefined
+            : {
+                opacity: heroOpacity,
+                scale: heroScale,
+                y: heroRecessY,
+                filter: heroBlur,
+                transformOrigin: '50% 42%',
+              }
+        }
+        className="relative mx-auto w-full max-w-[1360px] px-6 sm:px-10 flex-1 flex items-center z-10 will-change-transform"
       >
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-stretch py-6 lg:py-10">
           {/* Left Column: Staggered Post-Intro Reveal (Badge -> Name -> Roles -> Copy -> Buttons) */}
@@ -314,6 +337,12 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate, revealed = true }) => {
 
       {/* Main Experimental Particle Universe Frame + 3-Layer Velocity Marquee */}
       {!isBookSnapshot && <ParticleUniverseStage />}
+
+      {/* Soft continuous atmospheric bottom fade into About */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#050505]/70 z-[5]"
+      />
     </section>
   );
 };

@@ -1,12 +1,9 @@
 import React, { useRef } from 'react';
-import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import { AboutArchitectureVisual } from './MonochromeVisuals';
 import { AnimatedCounter, HairlineDraw } from '../motion/MotionPrimitives';
-import {
-  ImpossibleLivingCard,
-  RealityDimensionSection,
-} from '../motion/ExperimentalEngine';
+import { ImpossibleLivingCard } from '../motion/ExperimentalEngine';
 import { ParticleSectionTitle } from '../motion/ParticleSectionHeader';
 import { EASE_CINEMATIC, VIEWPORT_CONFIG } from '../motion/motionSystem';
 import { useIsBookSnapshot } from '../motion/BookSnapshotContext';
@@ -36,16 +33,48 @@ const CREATIVE_WORLD_PILLARS = [
 
 export const About: React.FC = () => {
   const { cms } = useSiteConfig();
+  const sectionRef = useRef<HTMLElement | null>(null);
   const visualWrapRef = useRef<HTMLDivElement | null>(null);
   const rawReduceMotion = useReducedMotion();
   const isBookSnapshot = useIsBookSnapshot();
   const shouldReduceMotion = rawReduceMotion || isBookSnapshot;
+  const { animations } = cms;
+  const transitionEnabled =
+    !shouldReduceMotion && animations.masterEnabled && animations.sectionTransitions !== false;
 
-  const { scrollYProgress } = useScroll({
-    target: visualWrapRef,
+  // Scroll-linked Home -> About entrance (upward reveal, depth scale, soft blur settle & traveling light sweep)
+  const { scrollYProgress: enterProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start 98%', 'start 14%'],
+  });
+  const smoothEnter = useSpring(enterProgress, {
+    stiffness: 105,
+    damping: 26,
+    mass: 0.35,
+  });
+
+  const aboutRiseY = useTransform(smoothEnter, [0, 1], [44, 0]);
+  const aboutScale = useTransform(smoothEnter, [0, 1], [0.978, 1]);
+  const aboutOpacity = useTransform(smoothEnter, [0, 0.18, 0.72, 1], [0.24, 0.62, 0.96, 1]);
+  const aboutBlur = useTransform(smoothEnter, [0, 0.58, 1], ['blur(5px)', 'blur(1.2px)', 'blur(0px)']);
+
+  // Traveling light sweep across the boundary during Home -> About transition
+  const sweepX = useTransform(smoothEnter, [0, 1], ['-42%', '118%']);
+  const sweepOpacity = useTransform(smoothEnter, [0, 0.22, 0.54, 0.86, 1], [0, 0.85, 1, 0.4, 0]);
+  const horizonGlowOpacity = useTransform(smoothEnter, [0, 0.4, 1], [0.15, 0.7, 0.15]);
+
+  // Continuous multi-plane parallax depth within About
+  const { scrollYProgress: parallaxProgress } = useScroll({
+    target: sectionRef,
     offset: ['start end', 'end start'],
   });
-  const imageY = useTransform(scrollYProgress, [0, 1], [32, -32]);
+  const smoothParallax = useSpring(parallaxProgress, {
+    stiffness: 120,
+    damping: 28,
+    mass: 0.35,
+  });
+  const textDepthY = useTransform(smoothParallax, [0, 1], [20, -14]);
+  const imageY = useTransform(smoothParallax, [0, 1], [44, -26]);
 
   const visibleStats = cms.about.stats.filter((s) => s.visible !== false);
   const timeline = cms.about.timeline || [];
@@ -53,16 +82,46 @@ export const About: React.FC = () => {
   const achievements = cms.about.achievements || [];
 
   return (
-    <RealityDimensionSection
-      id="about"
-      className="py-24 sm:py-32 bg-[#050505]/40 border-b border-white/[0.06] z-10"
+    <section
+      ref={sectionRef}
+      id={isBookSnapshot ? undefined : 'about'}
+      className="relative py-24 sm:py-32 bg-gradient-to-b from-transparent via-[#050505]/45 to-[#050505]/40 border-b border-white/[0.06] z-10 overflow-x-clip"
     >
-      <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
+      {/* Continuous atmospheric blend + scroll-driven soft light sweep (spans rather than divs to preserve nth-of-type selectors) */}
+      {transitionEnabled && (
+        <>
+          <motion.span
+            aria-hidden="true"
+            style={{ opacity: horizonGlowOpacity }}
+            className="pointer-events-none block absolute inset-x-0 -top-24 h-44 bg-gradient-to-b from-transparent via-white/[0.03] to-transparent blur-2xl"
+          />
+          <motion.span
+            aria-hidden="true"
+            style={{ x: sweepX, opacity: sweepOpacity }}
+            className="pointer-events-none block absolute -top-24 bottom-0 left-0 w-[56vw] max-w-[780px] -rotate-12 bg-gradient-to-r from-transparent via-white/[0.065] to-transparent blur-2xl will-change-transform"
+          />
+        </>
+      )}
+
+      <motion.div
+        style={
+          transitionEnabled
+            ? {
+                y: aboutRiseY,
+                scale: aboutScale,
+                opacity: aboutOpacity,
+                filter: aboutBlur,
+                transformOrigin: '50% 18%',
+              }
+            : undefined
+        }
+        className="relative mx-auto max-w-[1360px] px-6 sm:px-10 will-change-transform"
+      >
         <motion.div
-          initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20, filter: 'blur(4px)' }}
+          initial={shouldReduceMotion ? undefined : { opacity: 0, y: 18, filter: 'blur(5px)' }}
           whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           viewport={VIEWPORT_CONFIG}
-          transition={{ duration: 0.6, ease: EASE_CINEMATIC }}
+          transition={{ duration: 0.54, delay: 0.04, ease: EASE_CINEMATIC }}
           className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14"
         >
           <div className="flex-1">
@@ -78,18 +137,21 @@ export const About: React.FC = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-stretch">
-          <div className="lg:col-span-6 flex flex-col justify-between gap-10">
+          <motion.div
+            style={transitionEnabled ? { y: textDepthY } : undefined}
+            className="lg:col-span-6 flex flex-col justify-between gap-10 will-change-transform"
+          >
             <div className="space-y-6">
               {cms.about.paragraphs.map((paragraph, index) => (
                 <motion.p
                   key={index}
                   data-gravity="well"
-                  initial={shouldReduceMotion ? undefined : { opacity: 0, y: 18, filter: 'blur(4px)' }}
+                  initial={shouldReduceMotion ? undefined : { opacity: 0, y: 16, filter: 'blur(4px)' }}
                   whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   viewport={VIEWPORT_CONFIG}
                   transition={{
-                    duration: 0.6,
-                    delay: index * 0.12,
+                    duration: 0.52,
+                    delay: 0.1 + index * 0.08,
                     ease: EASE_CINEMATIC,
                   }}
                   className={`text-base leading-[1.75] transition-colors duration-300 ${
@@ -105,10 +167,10 @@ export const About: React.FC = () => {
               {cms.about.philosophyQuote && (
                 <motion.blockquote
                   data-gravity="gather"
-                  initial={shouldReduceMotion ? undefined : { opacity: 0, x: -12 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={shouldReduceMotion ? undefined : { opacity: 0, y: 14, filter: 'blur(4px)' }}
+                  whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   viewport={VIEWPORT_CONFIG}
-                  transition={{ duration: 0.6, delay: 0.15, ease: EASE_CINEMATIC }}
+                  transition={{ duration: 0.52, delay: 0.22, ease: EASE_CINEMATIC }}
                   className="pl-5 py-2 border-l-2 border-white/40 text-sm sm:text-base italic text-zinc-200 leading-relaxed"
                 >
                   &ldquo;{cms.about.philosophyQuote}&rdquo;
@@ -116,10 +178,10 @@ export const About: React.FC = () => {
               )}
 
               <motion.div
-                initial={shouldReduceMotion ? undefined : { opacity: 0 }}
-                whileInView={{ opacity: 1 }}
+                initial={shouldReduceMotion ? undefined : { opacity: 0, y: 12, filter: 'blur(3px)' }}
+                whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 viewport={VIEWPORT_CONFIG}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.48, delay: 0.26, ease: EASE_CINEMATIC }}
                 className="pt-5 border-t border-white/[0.08] space-y-2"
               >
                 <div className="text-[11px] font-mono tracking-[0.22em] text-zinc-500 uppercase">
@@ -143,10 +205,10 @@ export const About: React.FC = () => {
               {visibleStats.map((stat, idx) => (
                 <motion.div
                   key={stat.id}
-                  initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20, scale: 0.96 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  initial={shouldReduceMotion ? undefined : { opacity: 0, y: 18, filter: 'blur(4px)' }}
+                  whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   viewport={VIEWPORT_CONFIG}
-                  transition={{ duration: 0.45, delay: idx * 0.06, ease: EASE_CINEMATIC }}
+                  transition={{ duration: 0.5, delay: 0.26 + idx * 0.075, ease: EASE_CINEMATIC }}
                 >
                   <ImpossibleLivingCard
                     antiGravityFloat
@@ -165,12 +227,12 @@ export const About: React.FC = () => {
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           <motion.div
             ref={visualWrapRef}
-            style={shouldReduceMotion ? undefined : { y: imageY }}
-            className="lg:col-span-6 flex items-stretch"
+            style={transitionEnabled ? { y: imageY } : undefined}
+            className="lg:col-span-6 flex items-stretch will-change-transform"
           >
             <AboutArchitectureVisual photoUrl={cms.about.photoUrl} />
           </motion.div>
@@ -189,10 +251,10 @@ export const About: React.FC = () => {
             {CREATIVE_WORLD_PILLARS.map((pillar, idx) => (
               <motion.div
                 key={pillar.title}
-                initial={shouldReduceMotion ? undefined : { opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={shouldReduceMotion ? undefined : { opacity: 0, y: 16, filter: 'blur(4px)' }}
+                whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 viewport={VIEWPORT_CONFIG}
-                transition={{ duration: 0.45, delay: idx * 0.07, ease: EASE_CINEMATIC }}
+                transition={{ duration: 0.48, delay: 0.06 + idx * 0.065, ease: EASE_CINEMATIC }}
               >
                 <ImpossibleLivingCard
                   gravityMode="gather"
@@ -301,7 +363,7 @@ export const About: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-    </RealityDimensionSection>
+      </motion.div>
+    </section>
   );
 };

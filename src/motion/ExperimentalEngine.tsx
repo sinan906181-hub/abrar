@@ -440,15 +440,26 @@ export const ExperimentalAtmosphereCanvas: React.FC = () => {
       const hoveredCard = experimentalBus.hoveredCardRect;
       const waveFactor = wavesEnabled ? curPart.waveStrength : 0;
 
+      // Continuous Home -> About scroll transition envelope (peaks mid-seam, settles cleanly)
+      const seamStart = height * 0.18;
+      const seamSpan = Math.max(height * 0.95, 1);
+      const rawSeam = Math.max(0, Math.min(1, (window.scrollY - seamStart) / seamSpan));
+      const homeAboutSeam = curAnim.sectionTransitions !== false ? Math.sin(rawSeam * Math.PI) : 0;
+
       for (const p of particles) {
         const depthScale = 0.35 + p.depth * curPart.depth;
-        p.y -= scrollVel * 0.14 * depthScale * scrollMult;
+        p.y -= scrollVel * (0.14 + homeAboutSeam * 0.08) * depthScale * scrollMult;
         p.vy += curPart.gravity * 0.012 * sf;
         if (antiGrav) {
           p.vy -= 0.01 * sf;
           if (p.vy < -0.85) p.vy = -0.85;
         } else {
           p.vy *= 0.992;
+        }
+
+        if (homeAboutSeam > 0.02) {
+          p.vx += homeAboutSeam * 0.012 * p.depth * sf;
+          p.vy -= homeAboutSeam * 0.016 * depthScale * sf;
         }
 
         if (turnEnvelope > 0.01) {
@@ -571,15 +582,15 @@ export const ExperimentalAtmosphereCanvas: React.FC = () => {
         ctx.fill();
       }
 
-      // E. Dynamic Particle Network Connection Lines (stretching subtly on page turns)
+      // E. Dynamic Particle Network Connection Lines (stretching subtly on page turns & scroll seam)
       const baseConnectMax = isLowPower
         ? Math.min(92, curPart.connectionDistance * 0.78)
         : curPart.connectionDistance;
-      const connectMaxDist = baseConnectMax * (1 + turnEnvelope * 0.28);
+      const connectMaxDist = baseConnectMax * (1 + turnEnvelope * 0.28 + homeAboutSeam * 0.14);
       const connectMaxDistSq = connectMaxDist * connectMaxDist;
       const lineBaseOpacity = isLowPower
         ? curPart.connectionOpacity * 0.75
-        : curPart.connectionOpacity * (isContactSection ? 1.28 : 1);
+        : curPart.connectionOpacity * (isContactSection ? 1.28 : 1 + homeAboutSeam * 0.18);
       ctx.lineWidth = 0.65;
 
       if (connectionsEnabled && connectMaxDist > 8 && lineBaseOpacity > 0.005) {
