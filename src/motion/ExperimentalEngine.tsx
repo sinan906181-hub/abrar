@@ -1507,8 +1507,8 @@ export const ImpossibleLivingCard: React.FC<{
             <motion.rect
               x="0.5"
               y="0.5"
-              width="calc(100% - 1px)"
-              height="calc(100% - 1px)"
+              width="99.5%"
+              height="99.5%"
               rx="16"
               ry="16"
               fill="none"

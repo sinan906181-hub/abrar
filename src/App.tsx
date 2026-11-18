@@ -23,7 +23,6 @@ import {
 import {
   BOOK_PAGES,
   BookBindingFrame,
-  BookPageIndicator,
   BookPageTurnOverlay,
   resolveBookPage,
   type PageTurnState,
@@ -166,7 +165,7 @@ const PublicPortfolio: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin })
 
       window.clearTimeout(scrollJumpTimerRef.current);
       scrollJumpTimerRef.current = window.setTimeout(() => {
-        el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        el.scrollIntoView({ behavior: 'instant', block: 'start' });
       }, jumpDelay);
     },
     [triggerTurnVisual]
@@ -372,9 +371,6 @@ const PublicPortfolio: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin })
       <ExperimentalCursorPortal />
       {siteRevealed && !introActive && <BookBindingFrame />}
       <BookPageTurnOverlay turn={pageTurn} renderPage={renderPageSnapshot} />
-      {siteRevealed && !introActive && (
-        <BookPageIndicator activeSection={activeSection} onTurnToPage={scrollToSection} />
-      )}
       <ScrollProgressHUD />
 
       <div

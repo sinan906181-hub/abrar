@@ -1552,7 +1552,7 @@ export const DesignSeoSettingsPanel: React.FC<EditorProps> = ({ draft, onChange 
               </div>
               <div className="p-5 rounded-2xl border border-white/10 bg-[#050507] space-y-1.5">
                 <div className="text-xs font-mono text-zinc-500 truncate">
-                  {draft.seo.canonicalUrl || 'https://muhammedsinan.studio'}
+                  {draft.seo.canonicalUrl || 'https://abrarhassan.studio'}
                 </div>
                 <div className="text-base font-semibold text-white line-clamp-1">
                   {draft.seo.title || draft.home.name}

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useSiteConfig } from '../context/SiteConfigContext';
 import { BookSnapshotContext } from './BookSnapshotContext';
-import { EASE_CINEMATIC } from './motionSystem';
 
 export interface BookPageMeta {
   id: string;
@@ -420,87 +418,5 @@ export const BookPageTurnOverlay: React.FC<{
         </div>
       </motion.div>
     </div>
-  );
-};
-
-/**
- * Minimal Hardcover Folio Indicator (`01 / 06 — HOME`)
- * Compact un-padded architectural index along bottom-left corner.
- */
-export const BookPageIndicator: React.FC<{
-  activeSection: string;
-  onTurnToPage: (sectionId: string) => void;
-}> = ({ activeSection, onTurnToPage }) => {
-  const shouldReduceMotion = useReducedMotion();
-  const current = resolveBookPage(activeSection);
-
-  const currentIdx = BOOK_PAGES.findIndex((p) => p.id === current.id);
-  const resolvedIdx = currentIdx >= 0 ? currentIdx : 0;
-
-  const prevPage = resolvedIdx > 0 ? BOOK_PAGES[resolvedIdx - 1] : null;
-  const nextPage = resolvedIdx < BOOK_PAGES.length - 1 ? BOOK_PAGES[resolvedIdx + 1] : null;
-
-  return (
-    <aside
-      aria-label="Digital Book Page Navigation"
-      className="fixed bottom-5 left-4 sm:bottom-6 sm:left-8 z-40 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#08080B]/88 backdrop-blur-xl border border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.8)]"
-    >
-      <button
-        type="button"
-        disabled={!prevPage}
-        onClick={() => prevPage && onTurnToPage(prevPage.id)}
-        aria-label={prevPage ? `Turn to previous page ${prevPage.title}` : 'At first page'}
-        className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-300 hover:text-black hover:bg-white disabled:opacity-25 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-      >
-        <ChevronLeft className="w-3.5 h-3.5" />
-      </button>
-
-      <div className="flex items-center gap-2 px-1.5 select-none whitespace-nowrap">
-        <div className="relative h-4 overflow-hidden flex items-center">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
-              key={current.number}
-              initial={shouldReduceMotion ? { opacity: 0 } : { y: 10, opacity: 0 }}
-              animate={shouldReduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { y: -10, opacity: 0 }}
-              transition={{ duration: 0.25, ease: EASE_CINEMATIC }}
-              className="font-mono text-xs font-semibold text-white tabular-nums tracking-[0.14em]"
-            >
-              {current.number}
-            </motion.span>
-          </AnimatePresence>
-          <span className="font-mono text-[11px] text-zinc-500 tabular-nums ml-1">
-            / {TOTAL_BOOK_PAGES_LABEL}
-          </span>
-        </div>
-
-        <span aria-hidden="true" className="text-zinc-700 text-xs">
-          ·
-        </span>
-
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={current.title}
-            initial={shouldReduceMotion ? { opacity: 0 } : { y: 8, opacity: 0 }}
-            animate={shouldReduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { y: -8, opacity: 0 }}
-            transition={{ duration: 0.25, ease: EASE_CINEMATIC }}
-            className="font-mono text-[11px] tracking-[0.18em] text-zinc-200 uppercase"
-          >
-            {current.title}
-          </motion.span>
-        </AnimatePresence>
-      </div>
-
-      <button
-        type="button"
-        disabled={!nextPage}
-        onClick={() => nextPage && onTurnToPage(nextPage.id)}
-        aria-label={nextPage ? `Turn to next page ${nextPage.title}` : 'At final page'}
-        className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-300 hover:text-black hover:bg-white disabled:opacity-25 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-      >
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </aside>
   );
 };
